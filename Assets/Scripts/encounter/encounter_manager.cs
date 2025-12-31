@@ -13,12 +13,15 @@ public class encounter_manager : MonoBehaviour
     public bool only_one_spawnpoint;
     [SerializeField] private int encounter_id;
     private bool spawn_wave_once;
+    public int current_wave;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         //Perhaps encounters should get their id on start, but first lets find camera.
         cm = Utils.get_camera().GetComponent<camera_movement>();
         encounter_id = Utils.AssignEncounterid();
+        current_wave = 0;
+        spawn_wave_once = false;
     }
 
     void Awake()
@@ -41,7 +44,28 @@ public class encounter_manager : MonoBehaviour
 
         if (has_waves)
         {
+            if (Utils.get_enemy_deaths() == wave_breakpoints[current_wave])
+            {
+                if (!spawn_wave_once)
+                {
+                    spawn_wave_once = true;
+                    current_wave++;
 
+                    if (current_wave == wave_breakpoints.Length)
+                    {
+
+                    }
+                    else
+                    {
+                        NextWave();
+                    }
+                }
+           
+            }
+            else
+            {
+                //wait for wave to finish
+            }
         }
     }
 
@@ -64,7 +88,7 @@ public class encounter_manager : MonoBehaviour
         }
         else
         {
-            StartCoroutine(SpawnWaves());
+            StartWaves();
         }
        
         
@@ -73,45 +97,42 @@ public class encounter_manager : MonoBehaviour
         
     }
 
-    IEnumerator SpawnWaves()
+    void StartWaves()
     {
-        int current_wave = 0;
+        current_wave = 0;
         
 
         for (int i = 0; i < wave_breakpoints[current_wave]; i++)
         {
-            Instantiate(enemies[i], spawn_points[i].position, spawn_points[i].rotation);
-        }
-
-        while (!ending_encounter)
-        {
-            if (Utils.get_enemy_deaths() == wave_breakpoints[current_wave])
+            if (only_one_spawnpoint)
             {
-                
-                current_wave++;
-
-                if(current_wave == wave_breakpoints.Length)
-                {
-                    break;
-                }
-                else
-                {
-                    //spawn NEXT wave
-                    for (int i = wave_breakpoints[current_wave - 1]; i < wave_breakpoints[current_wave]; i++)
-                    {
-                        Instantiate(enemies[i], spawn_points[i].position, spawn_points[i].rotation);
-                    }
-                }
-
-                
+                Instantiate(enemies[i], single_spawnpoint.position, single_spawnpoint.rotation);
             }
             else
             {
-                //wait for wave to finish
+                Instantiate(enemies[i], spawn_points[i].position, spawn_points[i].rotation);
             }
+           
         }
 
-        yield return null;
+    }
+
+    void NextWave()
+    {
+        for (int i = wave_breakpoints[current_wave - 1]; i < wave_breakpoints[current_wave]; i++)
+        {
+            if (only_one_spawnpoint)
+            {
+                Instantiate(enemies[i], single_spawnpoint.position, single_spawnpoint.rotation);
+            }
+            else
+            {
+                Instantiate(enemies[i], spawn_points[i].position, spawn_points[i].rotation);
+            }
+            
+        }
+
+        spawn_wave_once = false;
     }
 
     private void SpawnEnemies()
